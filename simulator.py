@@ -9,7 +9,9 @@ Output files:
     RR.txt
     SRTF_1.txt
     SRTF_2.txt
-
+    
+Apr 10th Revision 1: update FCFS implementation, fixed the bug when there are idle time slices between processes
+Thanks Huang Lung-Chen for pointing out
 '''
 import sys
 
@@ -31,6 +33,8 @@ def FCFS_scheduling(process_list):
     current_time = 0
     waiting_time = 0
     for process in process_list:
+        if(current_time < process.arrive_time):
+            current_time = process.arrive_time
         schedule.append((current_time,process.id))
         waiting_time = waiting_time + (current_time - process.arrive_time)
         current_time = current_time + process.burst_time

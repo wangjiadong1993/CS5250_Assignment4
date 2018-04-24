@@ -19,6 +19,7 @@ Revision 2:
     Thanks Lee Wei Ping for trying and pointing out the difficulty & ambiguity with future_prediction SRTF.
 '''
 import sys
+import heapq
 
 input_file = 'input.txt'
 
@@ -49,14 +50,124 @@ def FCFS_scheduling(process_list):
 #Input: process_list, time_quantum (Positive Integer)
 #Output_1 : Schedule list contains pairs of (time_stamp, proccess_id) indicating the time switching to that proccess_id
 #Output_2 : Average Waiting Time
-def RR_scheduling(process_list, time_quantum ):
-    return (["to be completed, scheduling process_list on round robin policy with time_quantum"], 0.0)
+def RR_scheduling(process_list, time_quantum):
+    schedule = []
+    current_time = 0
+    waiting_time = 0
+    scheduled_set = [];
+    last_preempt_time = dict();
+    
+    while(True):
+        # id there is no more processes to schedule
+        if len(process_list) == 0:
+            break;
+        #iterate through all the remaining processes
+        
+        for process in process_list:
+            isFirst = True;
+            #when reaching a not-yet-arrived process
+            #break
+            if(current_time < process.arrive_time):
+                if isFirst:
+                    current_time = process.arrive_time;
+                break;
+            #for each current-processing processes
+            else:
+                if not (process in scheduled_set):
+                    waiting_time += current_time - process.arrive_time;
+                    scheduled_set.add(process.id);
+                else:
+                    waiting_time += current_time - last_preempt_time[proccess.id];
+                schedule.append((current_time, process.id));
+                if process.burst_time <= time_quantum:
+                    current_time += process.burst_time;
+                    last_preempt_time[proccess.id] = current_time;
+                    process_list.remove(process);
+                else:
+                    current_time += time_quantum;
+                    last_preempt_time[proccess.id] = current_time;
+                    process.burst_time -= time_quantum;
+            isFirst = False;
+        
+    while len(scheduled_set) != 0 :
+        process = scheduled_set[0];
+        scheduled_set = scheduled_set[1:];
+        waiting_time += current_time - last_preempt_time[proccess.id];
+        schedule.append((current_time, process.id));
+        if process.burst_time <= time_quantum:    
+            current_time += process.burst_time;    
+        else:
+            current_time += time_quantum;
+            process.burst_time -= time_quantum;
+            scheduled_set.append(process);
+        last_preempt_time[proccess.id] = current_time;
+
+
+    average_waiting_time = waiting_time/float(len(process_list))
+    return schedule, average_waiting_time
+
+    
 
 def SRTF_scheduling(process_list):
-    return (["to be completed, scheduling process_list on SRTF, using process.burst_time to calculate the remaining time of the current process "], 0.0)
+    schedule = []
+    current_time = 0
+    waiting_time = 0
+    preempted_process_heapq = [];
+    running_task = None;
+
+    while(True):
+        if len(process_list) == 0:
+            break;
+
+        if current_time >= process_list[0].arrive_time:
+            process = process_list[0];
+            process_list = process_list[1:];
+            heapq.heappush(preempted_process_heapq, (process.id, {"Process": process, "preempt_time": current_time}));
+            if running_task == None:
+                process = heapq.heappop(preempted_process_heapq)[1];
+                running_task = {"Process": process["Process"], "start_time": current_time};
+                schedule.append((current_time, process["Process"].id));
+            else:
+                shortest_in_heapq = heapq.heappop(preempted_process_heapq)[1];
+                if shortest_in_heapq["Process"].burst_time < (running_task["Process"].burst_time - running_task["start_time"] - current_time) :
+                    heapq.heappush(preempted_process_heapq, (unning_task["Process"].id, {"Process": running_task["Process"], "preempt_time": current_time});
+                    running_task = {"Process": shortest_in_heapq["Process"], "start_time": current_time};
+                else:
+                    heapq.heappush(preempted_process_heapq, (shortest_in_heapq["Process"].id, shortest_in_heapq));
+        else if current_time >= running_task["start_time"] + running_task["Process"].burst_time:
+            running_task = None;
+            if len(preempted_process_heapq) == 0:
+                pass;
+            else:
+                process = heapq.heappop(preempted_process_heapq)[1];
+                running_task = {"Process": process["Process"], "start_time": current_time};
+                schedule.append((current_time, process["Process"].id));
+        else:
+            current_time = process_list[0].arrive_time;
+            if running_task != None:
+                current_time = min(current_time, running_task["start_time"] + running_task["Process"].burst_time);
+
+    while(true):
+        if len(preempted_process_heapq) == 0:
+            break;
+
+        if current_time >= running_task["start_time"] + running_task["Process"].burst_time:
+            running_task = None;
+            if len(preempted_process_heapq) == 0:
+                pass;
+            else:
+                process = heapq.heappop(preempted_process_heapq)[1];
+                running_task = {"Process": process["Process"], "start_time": current_time};
+                schedule.append((current_time, process["Process"].id));
+        else:
+            if running_task != None:
+                current_time = min(current_time, running_task["start_time"] + running_task["Process"].burst_time);
+
+
+
 
 def SJF_scheduling(process_list, alpha):
-    return (["to be completed, scheduling SJF without using information from process.burst_time"],0.0)
+    
 
 
 def read_input():
@@ -69,6 +180,7 @@ def read_input():
                 exit()
             result.append(Process(int(array[0]),int(array[1]),int(array[2])))
     return result
+
 def write_output(file_name, schedule, avg_waiting_time):
     with open(file_name,'w') as f:
         for item in schedule:

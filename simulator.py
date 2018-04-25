@@ -56,54 +56,76 @@ def RR_scheduling(process_list, time_quantum):
     waiting_time = 0
     scheduled_set = [];
     last_preempt_time = dict();
-    
-    while(True):
-        # id there is no more processes to schedule
-        if len(process_list) == 0:
-            break;
-        #iterate through all the remaining processes
+    process_list_len = len(process_list);
+
+    # while(True):
+    #     # id there is no more processes to schedule
+    #     if len(process_list) == 0:
+    #         break;
+    #     #iterate through all the remaining processes
         
-        for process in process_list:
-            isFirst = True;
-            #when reaching a not-yet-arrived process
-            #break
-            if(current_time < process.arrive_time):
-                if isFirst:
-                    current_time = process.arrive_time;
-                break;
-            #for each current-processing processes
-            else:
-                if not (process in scheduled_set):
-                    waiting_time += current_time - process.arrive_time;
-                    scheduled_set.add(process.id);
-                else:
-                    waiting_time += current_time - last_preempt_time[proccess.id];
-                schedule.append((current_time, process.id));
-                if process.burst_time <= time_quantum:
-                    current_time += process.burst_time;
-                    last_preempt_time[proccess.id] = current_time;
-                    process_list.remove(process);
-                else:
-                    current_time += time_quantum;
-                    last_preempt_time[proccess.id] = current_time;
-                    process.burst_time -= time_quantum;
-            isFirst = False;
-        
-    while len(scheduled_set) != 0 :
+    #     for process in process_list:
+    #         isFirst = True;
+    #         #when reaching a not-yet-arrived process
+    #         #break
+    #         if current_time < process.arrive_time and len(scheduled_set) == 0:
+    #             if isFirst:
+    #                 current_time = process.arrive_time;
+    #             break;
+    #         #for each current-processing processes
+    #         else:
+    #             if not (process in scheduled_set):
+    #                 waiting_time += current_time - process.arrive_time;
+    #                 scheduled_set.append(process);
+    #             else:
+    #                 waiting_time += current_time - last_preempt_time[process.id];
+    #             schedule.append((current_time, process.id));
+    #             if process.burst_time <= time_quantum:
+    #                 current_time += process.burst_time;
+    #                 last_preempt_time[process.id] = current_time;
+    #                 process_list.remove(process);
+    #             else:
+    #                 current_time += time_quantum;
+    #                 last_preempt_time[process.id] = current_time;
+    #                 process.burst_time -= time_quantum;
+    #         isFirst = False;
+     
+    while len(scheduled_set) != 0 or len(process_list) != 0:
+        # print '[%s]' % ', '.join(map(str, scheduled_set));
+        #get arrived tasks
+        if len(process_list) > 0:
+        # and process_list[0].arrive_time <= current_time:
+            processes = list(filter(lambda x: x.arrive_time <= current_time, process_list));
+            process_list = list(filter(lambda x: x.arrive_time > current_time, process_list));
+            scheduled_set = processes + scheduled_set;
+            for p in processes:
+                last_preempt_time[p.id] = current_time;
+            if len(processes) > 0:
+                continue;
+
+        #if no more task, fetch one from list
+        if len(scheduled_set) == 0:
+            current_time = process_list[0].arrive_time;
+            scheduled_set.append(process_list[0]);
+            last_preempt_time[process_list[0].id] = current_time; 
+
         process = scheduled_set[0];
-        scheduled_set = scheduled_set[1:];
-        waiting_time += current_time - last_preempt_time[proccess.id];
+        if len(scheduled_set) >= 2:
+            scheduled_set = scheduled_set[1:];
+        else:
+            scheduled_set = [];
+
+        waiting_time += current_time - last_preempt_time[process.id];
         schedule.append((current_time, process.id));
         if process.burst_time <= time_quantum:    
-            current_time += process.burst_time;    
+            current_time += process.burst_time;   
         else:
             current_time += time_quantum;
             process.burst_time -= time_quantum;
             scheduled_set.append(process);
-        last_preempt_time[proccess.id] = current_time;
+        last_preempt_time[process.id] = current_time;            
 
-
-    average_waiting_time = waiting_time/float(len(process_list))
+    average_waiting_time = waiting_time/float(process_list_len)
     return schedule, average_waiting_time
 
     
@@ -115,9 +137,7 @@ def SRTF_scheduling(process_list):
     preempted_process_heapq = [];
     running_task = None;
 
-    while(True):
-        if len(process_list) == 0:
-            break;
+    while len(process_list) != 0 or len(preempted_process_heapq) != 0:
 
         if current_time >= process_list[0].arrive_time:
             process = process_list[0];
@@ -130,11 +150,11 @@ def SRTF_scheduling(process_list):
             else:
                 shortest_in_heapq = heapq.heappop(preempted_process_heapq)[1];
                 if shortest_in_heapq["Process"].burst_time < (running_task["Process"].burst_time - running_task["start_time"] - current_time) :
-                    heapq.heappush(preempted_process_heapq, (unning_task["Process"].id, {"Process": running_task["Process"], "preempt_time": current_time});
+                    heapq.heappush(preempted_process_heapq, (unning_task["Process"].id, {"Process": running_task["Process"], "preempt_time": current_time}));
                     running_task = {"Process": shortest_in_heapq["Process"], "start_time": current_time};
                 else:
                     heapq.heappush(preempted_process_heapq, (shortest_in_heapq["Process"].id, shortest_in_heapq));
-        else if current_time >= running_task["start_time"] + running_task["Process"].burst_time:
+        elif current_time >= running_task["start_time"] + running_task["Process"].burst_time:
             running_task = None;
             if len(preempted_process_heapq) == 0:
                 pass;
@@ -147,9 +167,7 @@ def SRTF_scheduling(process_list):
             if running_task != None:
                 current_time = min(current_time, running_task["start_time"] + running_task["Process"].burst_time);
 
-    while(true):
-        if len(preempted_process_heapq) == 0:
-            break;
+    while(True):
 
         if current_time >= running_task["start_time"] + running_task["Process"].burst_time:
             running_task = None;
@@ -167,7 +185,39 @@ def SRTF_scheduling(process_list):
 
 
 def SJF_scheduling(process_list, alpha):
-    
+    schedule = [];
+    current_time = 0;
+    waiting_time = 0;
+    history_record = dict();
+
+
+    while True:
+        if len(process_list) == 0:
+            break;
+
+        process_arrived = list(filter(lambda x: x.arrive_time <= current_time, process_list));
+
+        if len(process_arrived) == 0:
+            current_time = process_list[0].arrive_time;
+        else:
+            predicted_processes = list(map(lambda x: {"predict": get_predict(x, history_record), "process": process} , process_arrived));
+            min_predicted_burst  = min(list(map(lambda x: x["predict"], predicted_processes)));
+            predicted_shortest_processes = list(filter(lambda x: x["predict"] == min_predicted_burst, predicted_processes));
+            first_predicted_arrival = min(list(map(lambda x: x["process"].arrive_time, predicted_shortest_processes)));
+            predicted_first_shortest_process = list(filter(lambda x: x["process"].arrive_time == first_predicted_arrival, predicted_shortest_processes))[0];
+            schedule.append((current_time, predicted_first_shortest_process["process"].id));
+            current_time += predicted_first_shortest_process["Process"].burst_time;
+            process_list.remove(predicted_first_shortest_process["process"]);
+            history_record[predicted_first_shortest_process["process"].id] = {"predict": predicted_first_shortest_process["predict"], "actual": predicted_first_shortest_process["process"].burst_time};
+
+
+def get_predict(process, history_record, alpha):
+    if process.id in history_record.keys():
+        return alpha * history_record[process.id]["predict"] + (1-alpha) * history_record[process.id]["actual"];
+    else:
+        return 5;
+
+
 
 
 def read_input():

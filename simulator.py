@@ -99,15 +99,16 @@ def RR_scheduling(process_list, time_quantum):
             process_list = list(filter(lambda x: x.arrive_time > current_time, process_list));
             scheduled_set = processes + scheduled_set;
             for p in processes:
-                last_preempt_time[p.id] = current_time;
-            if len(processes) > 0:
-                continue;
+                last_preempt_time[p.id] = p.start_time;
+            # if len(processes) > 0:
+            #     continue;
 
         #if no more task, fetch one from list
         if len(scheduled_set) == 0:
             current_time = process_list[0].arrive_time;
-            scheduled_set.append(process_list[0]);
-            last_preempt_time[process_list[0].id] = current_time; 
+            continue;
+            # scheduled_set.append(process_list[0]);
+            # last_preempt_time[process_list[0].id] = current_time; 
 
         process = scheduled_set[0];
         if len(scheduled_set) >= 2:
@@ -139,33 +140,42 @@ def SRTF_scheduling(process_list):
 
     while len(process_list) != 0 or len(preempted_process_heapq) != 0:
 
-        if current_time >= process_list[0].arrive_time:
-            process = process_list[0];
-            process_list = process_list[1:];
-            heapq.heappush(preempted_process_heapq, (process.id, {"Process": process, "preempt_time": current_time}));
-            if running_task == None:
-                process = heapq.heappop(preempted_process_heapq)[1];
-                running_task = {"Process": process["Process"], "start_time": current_time};
-                schedule.append((current_time, process["Process"].id));
-            else:
-                shortest_in_heapq = heapq.heappop(preempted_process_heapq)[1];
-                if shortest_in_heapq["Process"].burst_time < (running_task["Process"].burst_time - running_task["start_time"] - current_time) :
-                    heapq.heappush(preempted_process_heapq, (unning_task["Process"].id, {"Process": running_task["Process"], "preempt_time": current_time}));
-                    running_task = {"Process": shortest_in_heapq["Process"], "start_time": current_time};
-                else:
-                    heapq.heappush(preempted_process_heapq, (shortest_in_heapq["Process"].id, shortest_in_heapq));
-        elif current_time >= running_task["start_time"] + running_task["Process"].burst_time:
-            running_task = None;
-            if len(preempted_process_heapq) == 0:
-                pass;
-            else:
-                process = heapq.heappop(preempted_process_heapq)[1];
-                running_task = {"Process": process["Process"], "start_time": current_time};
-                schedule.append((current_time, process["Process"].id));
-        else:
+        if len(process_list) > 0:
+            processes = list(filter(lambda x: x.arrive_time <= current_time, process_list));
+            process_list = list(filter(lambda x: x.arrive_time > current_time, process_list));
+            for p in processes:
+                heapq.heappush(preempted_process_heapq, (p.id, {"Process": p, "preempt_time": p.start_time}));       
+
+        #if no more task, fetch one from list
+        if len(preempted_process_heapq) == 0:
             current_time = process_list[0].arrive_time;
-            if running_task != None:
-                current_time = min(current_time, running_task["start_time"] + running_task["Process"].burst_time);
+            continue;
+
+
+        if running_task == None:
+            process = heapq.heappop(preempted_process_heapq)[1];
+            running_task = {"Process": process["Process"], "start_time": current_time};
+            schedule.append((current_time, process["Process"].id));
+        else:
+            shortest_in_heapq = heapq.heappop(preempted_process_heapq)[1];
+            if shortest_in_heapq["Process"].burst_time < (running_task["Process"].burst_time - running_task["start_time"] - current_time) :
+                heapq.heappush(preempted_process_heapq, (unning_task["Process"].id, {"Process": running_task["Process"], "preempt_time": current_time}));
+                running_task = {"Process": shortest_in_heapq["Process"], "start_time": current_time};
+            else:
+                heapq.heappush(preempted_process_heapq, (shortest_in_heapq["Process"].id, shortest_in_heapq));
+        
+        # elif current_time >= running_task["start_time"] + running_task["Process"].burst_time:
+        #     running_task = None;
+        #     if len(preempted_process_heapq) == 0:
+        #         pass;
+        #     else:
+        #         process = heapq.heappop(preempted_process_heapq)[1];
+        #         running_task = {"Process": process["Process"], "start_time": current_time};
+        #         schedule.append((current_time, process["Process"].id));
+        # else:
+        #     current_time = process_list[0].arrive_time;
+        #     if running_task != None:
+        #         current_time = min(current_time, running_task["start_time"] + running_task["Process"].burst_time);
 
     while(True):
 

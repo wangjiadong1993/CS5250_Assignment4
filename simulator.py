@@ -228,13 +228,13 @@ def SJF_scheduling(process_list, alpha):
             current_time += 1;
             continue;
         else:
-            for p in history_record.items():
-                print(p);
+            # for p in history_record.items():
+            #     print(p);
             non_empty_history_record_array = list(filter(lambda x: len(x[1][1])>0, history_record.items()));
             min_burst_process = min(non_empty_history_record_array, key = lambda x: x[1][0]);
             new_process = history_record[min_burst_process[0]][1].pop(0);
             schedule.append((current_time, new_process.id));
-            print(new_process)
+            # print(new_process)
             new_predict = alpha * history_record[min_burst_process[0]][0] + (1-alpha) * new_process.burst_time;
             history_record[min_burst_process[0]] = (new_predict, history_record[min_burst_process[0]][1]);
             waiting_time += (current_time -  new_process.arrive_time);
@@ -243,16 +243,6 @@ def SJF_scheduling(process_list, alpha):
 
     average_waiting_time = waiting_time/float(process_list_len);
     return schedule, average_waiting_time
-
-
-def get_predict(process, history_record, alpha):
-    if process.id in history_record.keys():
-        return alpha * history_record[process.id]["predict"] + (1-alpha) * history_record[process.id]["actual"];
-    else:
-        return 5;
-
-
-
 
 def read_input():
     result = []
